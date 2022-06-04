@@ -147,8 +147,36 @@
             "name": "% Profit Margins",
             "dataType": "double",
             "isDataTypeInferred": true,
-            "expression": " DIVIDE([TotalProfit],[TotalSales],0)",
+            "expression": " DIVIDE([TotalProfit],[SalesAmount],0)",
             "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "type": "calculated",
+            "name": "Margin",
+            "dataType": "double",
+            "isDataTypeInferred": true,
+            "expression": " 'Fact Sale'[Total Including Tax] - 'Fact Sale'[Unit Price]*'Fact Sale'[Quantity]"
+          },
+          {
+            "type": "calculated",
+            "name": "RawCost",
+            "dataType": "double",
+            "isDataTypeInferred": true,
+            "expression": " ('Fact Sale'[Total Including Tax]-'Fact Sale'[Profit])"
+          },
+          {
+            "type": "calculated",
+            "name": "TotalOrderRawCost",
+            "dataType": "double",
+            "isDataTypeInferred": true,
+            "expression": " ('Fact Sale'[Total Including Tax]-'Fact Sale'[Profit])*'Fact Sale'[Quantity]"
+          },
+          {
+            "type": "calculated",
+            "name": "TotalOrderProfit",
+            "dataType": "double",
+            "isDataTypeInferred": true,
+            "expression": "'Fact Sale'[Profit]*'Fact Sale'[Quantity]"
           }
         ],
         "partitions": [
@@ -170,10 +198,10 @@
         "measures": [
           {
             "name": "TotalProfit",
-            "expression": "SUM('Fact Sale'[Profit])"
+            "expression": "SUM('Fact Sale'[TotalOrderProfit])"
           },
           {
-            "name": "TotalOrder",
+            "name": "TotalSalesQuantity",
             "expression": "SUM('Fact Sale'[Quantity])"
           },
           {
@@ -186,7 +214,7 @@
           },
           {
             "name": "OrderlyProfit",
-            "expression": "ROUND([TotalProfit]/[TotalOrder],2)"
+            "expression": "ROUND([TotalProfit]/[TotalSalesQuantity],2)"
           },
           {
             "name": "EmpolyeeNumber",
@@ -198,65 +226,25 @@
           },
           {
             "name": "TotalCosts",
-            "expression": "SUMX('Fact Sale','Fact Sale'[Unit Price]*'Fact Sale'[Quantity])"
+            "expression": "SUMX('Fact Sale','Fact Sale'[RawCost]*'Fact Sale'[Quantity])"
           },
           {
-            "name": "TotalSales",
-            "expression": " [TotalCosts]+[TotalProfit]"
-          },
-          {
-            "name": "TotalMargin",
-            "expression": "[TotalProfit]/[TotalSales]",
-            "formatString": "0.00%;-0.00%;0.00%"
+            "name": "SalesAmount",
+            "expression": "SUMX('Fact Sale','Fact Sale'[Quantity]*'Fact Sale'[Total Including Tax])"
           },
           {
             "name": "CurrentQuarterMargin",
             "expression": "TOTALQTD([TotalMargin],'Fact Sale'[Invoice Date Key])",
-            "formatString": "0.00%;-0.00%;0.00%",
-            "kpi": {
-              "targetExpression": "'Fact Sale'[TotalMargin]",
-              "targetFormatString": "0.00%;-0.00%;0.00%",
-              "statusGraphic": "Shapes",
-              "statusExpression": [
-                "var x='Fact Sale'[CurrentQuarterMargin]/'Fact Sale'[_CurrentQuarterMargin Goal] return",
-                "            if(ISBLANK(x),BLANK(),",
-                "                    If(x<0.4,-1,",
-                "\t                If(x<0.8,0,1)",
-                "                )",
-                "            )",
-                "            "
-              ],
-              "annotations": [
-                {
-                  "name": "GoalType",
-                  "value": "Measure"
-                },
-                {
-                  "name": "KpiStatusType",
-                  "value": "Linear"
-                },
-                {
-                  "name": "KpiThresholdType",
-                  "value": "Percentage"
-                },
-                {
-                  "name": "KpiThresholdOrdering",
-                  "value": "Ascending"
-                },
-                {
-                  "name": "KpiThresholdCount",
-                  "value": "2"
-                },
-                {
-                  "name": "KpiThreshold_0",
-                  "value": "40"
-                },
-                {
-                  "name": "KpiThreshold_1",
-                  "value": "80"
-                }
-              ]
-            }
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "TotalMargin",
+            "expression": " [SalesAmount]-[TotalCosts]"
+          },
+          {
+            "name": "Margin%",
+            "expression": "DIVIDE([TotalMargin],[SalesAmount])",
+            "formatString": "0.00%;-0.00%;0.00%"
           }
         ]
       },
@@ -1092,6 +1080,18 @@
               },
               {
                 "name": "WWI Invoice ID"
+              },
+              {
+                "name": "Margin"
+              },
+              {
+                "name": "RawCost"
+              },
+              {
+                "name": "TotalOrderRawCost"
+              },
+              {
+                "name": "TotalOrderProfit"
               }
             ],
             "measures": [
@@ -1117,16 +1117,16 @@
                 "name": "TotalMargin"
               },
               {
-                "name": "TotalOrder"
+                "name": "TotalSalesQuantity"
               },
               {
                 "name": "TotalProfit"
               },
               {
-                "name": "TotalSales"
+                "name": "SalesAmount"
               },
               {
-                "name": "CurrentQuarterMargin"
+                "name": "Margin%"
               }
             ]
           }
