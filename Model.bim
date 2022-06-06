@@ -147,7 +147,7 @@
             "name": "% Profit Margins",
             "dataType": "double",
             "isDataTypeInferred": true,
-            "expression": " DIVIDE([TotalProfit],[SalesAmount],0)",
+            "expression": " DIVIDE([TotalProfit],[SalesAmount])",
             "formatString": "0.00%;-0.00%;0.00%"
           },
           {
@@ -155,28 +155,28 @@
             "name": "Margin",
             "dataType": "double",
             "isDataTypeInferred": true,
-            "expression": " 'Fact Sale'[Total Including Tax] - 'Fact Sale'[Unit Price]*'Fact Sale'[Quantity]"
-          },
-          {
-            "type": "calculated",
-            "name": "RawCost",
-            "dataType": "double",
-            "isDataTypeInferred": true,
-            "expression": " ('Fact Sale'[Total Including Tax]-'Fact Sale'[Profit])"
+            "expression": " 'Fact Sale'[Total Including Tax] - 'Fact Sale'[preRawCost]*'Fact Sale'[Quantity]"
           },
           {
             "type": "calculated",
             "name": "TotalOrderRawCost",
             "dataType": "double",
             "isDataTypeInferred": true,
-            "expression": " ('Fact Sale'[Total Including Tax]-'Fact Sale'[Profit])*'Fact Sale'[Quantity]"
+            "expression": " 'Fact Sale'[Total Including Tax]-'Fact Sale'[Profit]"
           },
           {
             "type": "calculated",
-            "name": "TotalOrderProfit",
+            "name": "soldPrice",
             "dataType": "double",
             "isDataTypeInferred": true,
-            "expression": "'Fact Sale'[Profit]*'Fact Sale'[Quantity]"
+            "expression": "'Fact Sale'[Total Including Tax]/'Fact Sale'[Quantity]"
+          },
+          {
+            "type": "calculated",
+            "name": "preRawCost",
+            "dataType": "double",
+            "isDataTypeInferred": true,
+            "expression": "([Total Including Tax]-[Profit])/'Fact Sale'[Quantity]"
           }
         ],
         "partitions": [
@@ -198,7 +198,7 @@
         "measures": [
           {
             "name": "TotalProfit",
-            "expression": "SUM('Fact Sale'[TotalOrderProfit])"
+            "expression": "SUM('Fact Sale'[Profit])"
           },
           {
             "name": "TotalSalesQuantity",
@@ -214,7 +214,50 @@
           },
           {
             "name": "OrderlyProfit",
-            "expression": "ROUND([TotalProfit]/[TotalSalesQuantity],2)"
+            "expression": "ROUND([TotalProfit]/[TotalSalesOptions],2)",
+            "kpi": {
+              "targetExpression": "500",
+              "statusGraphic": "Traffic Light - Single",
+              "statusExpression": [
+                "var x='Fact Sale'[OrderlyProfit] return",
+                "            if(ISBLANK(x),BLANK(),",
+                "                    If(x<300,-1,",
+                "\t                If(x<375,0,1)",
+                "                )",
+                "            )",
+                "            "
+              ],
+              "annotations": [
+                {
+                  "name": "GoalType",
+                  "value": "StaticValue"
+                },
+                {
+                  "name": "KpiStatusType",
+                  "value": "Linear"
+                },
+                {
+                  "name": "KpiThresholdType",
+                  "value": "Absolute"
+                },
+                {
+                  "name": "KpiThresholdOrdering",
+                  "value": "Ascending"
+                },
+                {
+                  "name": "KpiThresholdCount",
+                  "value": "2"
+                },
+                {
+                  "name": "KpiThreshold_0",
+                  "value": "300"
+                },
+                {
+                  "name": "KpiThreshold_1",
+                  "value": "375"
+                }
+              ]
+            }
           },
           {
             "name": "EmpolyeeNumber",
@@ -226,11 +269,11 @@
           },
           {
             "name": "TotalCosts",
-            "expression": "SUMX('Fact Sale','Fact Sale'[RawCost]*'Fact Sale'[Quantity])"
+            "expression": "SUMX('Fact Sale','Fact Sale'[preRawCost]*'Fact Sale'[Quantity])"
           },
           {
             "name": "SalesAmount",
-            "expression": "SUMX('Fact Sale','Fact Sale'[Quantity]*'Fact Sale'[Total Including Tax])"
+            "expression": "SUM('Fact Sale'[Total Including Tax])"
           },
           {
             "name": "CurrentQuarterMargin",
@@ -242,8 +285,69 @@
             "expression": " [SalesAmount]-[TotalCosts]"
           },
           {
-            "name": "Margin%",
-            "expression": "DIVIDE([TotalMargin],[SalesAmount])",
+            "name": "marginPrecent",
+            "expression": "[TotalMargin]/[SalesAmount]",
+            "formatString": "0.00%;-0.00%;0.00%",
+            "kpi": {
+              "targetExpression": "1",
+              "targetFormatString": "0.00%;-0.00%;0.00%",
+              "statusGraphic": "Traffic Light - Single",
+              "statusExpression": [
+                "var x='Fact Sale'[marginPrecent] return",
+                "            if(ISBLANK(x),BLANK(),",
+                "                    If(x<0.4,-1,",
+                "\t                If(x<0.5,0,1)",
+                "                )",
+                "            )",
+                "            "
+              ],
+              "annotations": [
+                {
+                  "name": "GoalType",
+                  "value": "StaticValue"
+                },
+                {
+                  "name": "KpiStatusType",
+                  "value": "Linear"
+                },
+                {
+                  "name": "KpiThresholdType",
+                  "value": "Absolute"
+                },
+                {
+                  "name": "KpiThresholdOrdering",
+                  "value": "Ascending"
+                },
+                {
+                  "name": "KpiThresholdCount",
+                  "value": "2"
+                },
+                {
+                  "name": "KpiThreshold_0",
+                  "value": "0.4"
+                },
+                {
+                  "name": "KpiThreshold_1",
+                  "value": "0.5"
+                }
+              ]
+            }
+          },
+          {
+            "name": "TotalSalesOptions",
+            "expression": "COUNT('Fact Sale'[Quantity])"
+          },
+          {
+            "name": "RefrenceMargin",
+            "expression": "SUM('Fact Sale'[Margin])"
+          },
+          {
+            "name": "OrderlyProfitForViewing",
+            "expression": "[OrderlyProfit]"
+          },
+          {
+            "name": "MarginPrecentForViewing",
+            "expression": "[marginPrecent]",
             "formatString": "0.00%;-0.00%;0.00%"
           }
         ]
@@ -702,17 +806,6 @@
             }
           }
         ]
-      },
-      {
-        "name": "CalculatedTable 1",
-        "partitions": [
-          {
-            "name": "CalculatedTable 1",
-            "source": {
-              "type": "calculated"
-            }
-          }
-        ]
       }
     ],
     "relationships": [
@@ -1085,13 +1178,13 @@
                 "name": "Margin"
               },
               {
-                "name": "RawCost"
-              },
-              {
                 "name": "TotalOrderRawCost"
               },
               {
-                "name": "TotalOrderProfit"
+                "name": "soldPrice"
+              },
+              {
+                "name": "preRawCost"
               }
             ],
             "measures": [
@@ -1103,9 +1196,6 @@
               },
               {
                 "name": "EmpolyeeNumber"
-              },
-              {
-                "name": "OrderlyProfit"
               },
               {
                 "name": "ProfitByEachEmpolyee"
@@ -1126,7 +1216,16 @@
                 "name": "SalesAmount"
               },
               {
-                "name": "Margin%"
+                "name": "TotalSalesOptions"
+              },
+              {
+                "name": "RefrenceMargin"
+              },
+              {
+                "name": "OrderlyProfitForViewing"
+              },
+              {
+                "name": "MarginPrecentForViewing"
               }
             ]
           }
